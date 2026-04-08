@@ -1,5 +1,5 @@
 """
-config_optimized.py — Central configuration loader with validation.
+config.py — Central configuration loader with validation.
 
 OPTIMIZATIONS:
 - Added GROQ_FAST_MODEL for hybrid model routing (small/fast queries)

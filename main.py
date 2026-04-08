@@ -1,5 +1,5 @@
 """
-main_optimized.py — Shubham Motors AI Voice Agent (OPTIMIZED)
+main.py — Shubham Motors AI Voice Agent (OPTIMIZED)
 FastAPI server handling all Exotel webhooks, admin dashboard, lead import, offer upload.
 
 OPTIMIZATIONS:
@@ -33,21 +33,21 @@ from fastapi.responses import HTMLResponse, JSONResponse, Response
 import uvicorn
 
 # 🔥 OPTIMIZATION: Import optimized modules instead of originals
-import config_optimized as config
+import config as config
 import sheets_manager as db
-from call_handler_optimized import (
+from call_handler import (
     start_call_session, get_opening_audio,
     end_call_session, active_calls
 )
-from agent_optimized import get_opening_message
+from agent import get_opening_message
 from lead_manager import add_leads_from_import, get_dashboard_stats
 from exotel_client import make_outbound_call
 from scraper import parse_offer_file, scrape_hero_website
 from scheduler import start_scheduler, stop_scheduler
 # 🔥 OPTIMIZATION: Use async voice functions
-from voice_optimized import synthesize_speech_async, transcribe_audio_async
+from voice import synthesize_speech_async, transcribe_audio_async
 from keep_alive import keep_alive
-from audio_utils_optimized import _mp3_to_pcm, _pcm_to_wav, _is_silence
+from audio_utils import _mp3_to_pcm, _pcm_to_wav, _is_silence
 
 # ── STARTUP / SHUTDOWN ─────────────────────────────────────────────────────────
 @asynccontextmanager
@@ -86,7 +86,7 @@ async def lifespan(app: FastAPI):
 
     async def _build_phrase_cache():
         await asyncio.sleep(5)  # 🔥 OPTIMIZATION: Reduced from 8s to 5s
-        from phrase_cache_optimized import build_cache
+        from phrase_cache import build_cache
         loop = asyncio.get_running_loop()
         await loop.run_in_executor(_executor, build_cache)
 
@@ -361,7 +361,7 @@ async def handle_gather(call_sid: str, request: Request):
 
         # ── Try intent detection FIRST (instant, no API call) ──────────
         # 🔥 OPTIMIZATION: Intent detection is O(1) — check before Groq
-        from intent_optimized import detect_intent
+        from intent import detect_intent
         conv = session["conversation"]
         voice_text = None
 
@@ -399,7 +399,7 @@ async def handle_gather(call_sid: str, request: Request):
         audio_url = None
 
         # 🔥 OPTIMIZATION: Check phrase cache FIRST (instant, no API call)
-        from phrase_cache_optimized import get_cached_audio
+        from phrase_cache import get_cached_audio
         cached_pcm = get_cached_audio(voice_text)
 
         # 🔥 FIX: Clean up stale response files from previous turns
@@ -594,7 +594,7 @@ async def api_active_calls():
 
 # ── VOICEBOT WEBSOCKET (OPTIMIZED) ───────────────────────────────────────────
 
-async def _process_speech_optimized(buf: bytes, call_sid: str, stream_sid: str, websocket: WebSocket, state: dict):
+async def _process_speech(buf: bytes, call_sid: str, stream_sid: str, websocket: WebSocket, state: dict):
     """
     🔥 OPTIMIZATION: Fully async speech processing pipeline:
     1. PCM → WAV conversion (CPU-bound, thread pool)
@@ -630,7 +630,7 @@ async def _process_speech_optimized(buf: bytes, call_sid: str, stream_sid: str, 
         session["language"] = detected_lang
 
         # 3. 🔥 OPTIMIZATION: Intent detection first (instant, no API call)
-        from intent_optimized import detect_intent
+        from intent import detect_intent
         conv = session["conversation"]
 
         intent_response = detect_intent(customer_text, lead=session.get("lead"))
@@ -652,7 +652,7 @@ async def _process_speech_optimized(buf: bytes, call_sid: str, stream_sid: str, 
         print(f"[Voicebot] Priya: {voice_text[:120]}")
 
         # 5. 🔥 OPTIMIZATION: Check phrase cache (instant)
-        from phrase_cache_optimized import get_cached_audio
+        from phrase_cache import get_cached_audio
         pcm = get_cached_audio(voice_text)
         if pcm:
             print(f"[PhraseCache] Serving cached ({len(pcm)} bytes)")
@@ -773,7 +773,7 @@ async def voicebot_stream(websocket: WebSocket):
 
                     async def handle_speech(b=buf):
                         try:
-                            await _process_speech_optimized(b, call_sid, stream_sid, websocket, state)
+                            await _process_speech(b, call_sid, stream_sid, websocket, state)
                         finally:
                             _busy[0] = False
 
@@ -1068,4 +1068,4 @@ setInterval(async () => {{
 # ── ENTRYPOINT ────────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
-    uvicorn.run("main_optimized:app", host="0.0.0.0", port=config.PORT, log_level="info")
+    uvicorn.run("main:app", host="0.0.0.0", port=config.PORT, log_level="info")
