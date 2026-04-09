@@ -1,5 +1,5 @@
 """
-agent_optimized.py
+agent.py
 The AI brain — WORLD-CLASS SALES AI with advanced persuasion techniques.
 
 OPTIMIZATIONS:
@@ -17,7 +17,7 @@ from datetime import datetime
 
 from groq import Groq
 
-import config_optimized as config
+import config as config
 from scraper import get_bike_catalog, format_catalog_for_ai
 from sheets_manager import get_active_offers
 
